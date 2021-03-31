@@ -111,9 +111,6 @@ class PacmanGame(GameApp):
         return f
 
 
-        # TODO:
-        #   - check if ch is in self.command_map, if it is in the map, call the function.
-
 if __name__ == "__main__":
     root = tk.Tk()
     root.title("Monkey Banana Game")
