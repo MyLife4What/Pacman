@@ -28,14 +28,13 @@ class Pacman(Sprite):
     def update(self):
         if self.maze.is_at_center(self.x, self.y):
             r, c = self.maze.xy_to_rc(self.x, self.y)
-
+            self.maze.eat_dot_at(r, c)
             if self.maze.has_dot_at(r, c):
                 if self.maze.is_superdot(r, c):
                     # TODO:
                     #   - call all the observers here
                     for i in self.dot_eaten_observers:
                         i()
-            self.maze.eat_dot_at(r, c)
 
             if self.maze.is_movable_direction(r, c, self.next_direction):
                 self.direction = self.next_direction
@@ -98,16 +97,16 @@ class PacmanGame(GameApp):
 
     def on_key_pressed(self, event):
         ch = event.char.upper()
-        if self.command_map.get(ch,"") != "":
+        if self.command_map.get(ch, "") != "":
             self.command_map[ch]()
 
         # TODO:
         #   - check if ch is in self.command_map, if it is in the map, call the function.
 
-
     def get_pacman_next_direction_function(self, pacman, next_direction):
         def f():
             pacman.set_next_direction(next_direction)
+
         return f
 
 
