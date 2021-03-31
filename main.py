@@ -5,11 +5,40 @@ from gamelib import Sprite, GameApp, Text
 from dir_consts import *
 from maze import Maze
 
+import random
+
 CANVAS_WIDTH = 800
 CANVAS_HEIGHT = 600
 
 UPDATE_DELAY = 33
 PACMAN_SPEED = 5
+
+
+class NormalPacmanState:
+    def __init__(self,pacman):
+        self.pacman = pacman
+
+    def random_upgrade(self):
+        if random.random() < 0.1:
+            self.pacman.state = SuperPacmanState(self.pacman)
+
+    def move_pacman(self):
+        self.pacman.x += PACMAN_SPEED * DIR_OFFSET[self.pacman.direction][0]
+        self.pacman.y += PACMAN_SPEED * DIR_OFFSET[self.pacman.direction][1]
+
+
+class SuperPacmanState:
+    def __init__(self, pacman):
+        self.pacman = pacman
+        self.counter = 0
+
+    def move_pacman(self):
+        if self.counter <= 50:
+            self.pacman.x += 2 * PACMAN_SPEED * DIR_OFFSET[self.pacman.direction][0]
+            self.pacman.y += 2 * PACMAN_SPEED * DIR_OFFSET[self.pacman.direction][1]
+            self.counter += 1
+        else:
+            self.pacman.state = NormalPacmanState(self.pacman)
 
 
 class Pacman(Sprite):
@@ -20,10 +49,14 @@ class Pacman(Sprite):
 
         self.direction = DIR_STILL
         self.next_direction = DIR_STILL
+        self.state = NormalPacmanState(self)
 
         x, y = maze.piece_center(r, c)
         super().__init__(app, 'images/pacman.png', x, y)
         self.dot_eaten_observers = []
+
+        self.is_super_speed = False
+        self.super_speed_counter = 0
 
     def update(self):
         if self.maze.is_at_center(self.x, self.y):
@@ -35,11 +68,18 @@ class Pacman(Sprite):
                     #   - call all the observers here
                     for i in self.dot_eaten_observers:
                         i()
+                    self.state.random_upgrade()
+                if random.random() < 0.1:
+                    if not self.is_super_speed:
+                        self.is_super_speed = True
+                        self.super_speed_counter = 0
 
             if self.maze.is_movable_direction(r, c, self.next_direction):
                 self.direction = self.next_direction
             else:
                 self.direction = DIR_STILL
+
+        self.state.move_pacman()
 
         self.x += PACMAN_SPEED * DIR_OFFSET[self.direction][0]
         self.y += PACMAN_SPEED * DIR_OFFSET[self.direction][1]
