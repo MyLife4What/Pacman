@@ -30,12 +30,10 @@ class Pacman(Sprite):
             r, c = self.maze.xy_to_rc(self.x, self.y)
 
             if self.maze.has_dot_at(r, c):
-                if self.maze.is_superdot(r, c):
-                    # TODO:
-                    #   - call all the observers here
-                    for i in self.dot_eaten_observers:
-                        i()
-            self.maze.eat_dot_at(r, c)
+                self.maze.eat_dot_at(r, c)
+
+                # TODO:
+                #   - call all the observers here
 
             if self.maze.is_movable_direction(r, c, self.next_direction):
                 self.direction = self.next_direction
