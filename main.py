@@ -13,7 +13,6 @@ CANVAS_HEIGHT = 600
 UPDATE_DELAY = 33
 PACMAN_SPEED = 5
 
-
 class NormalPacmanState:
     def __init__(self, pacman):
         self.pacman = pacman
