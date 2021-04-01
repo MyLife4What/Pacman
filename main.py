@@ -5,11 +5,43 @@ from gamelib import Sprite, GameApp, Text
 from dir_consts import *
 from maze import Maze
 
+import random
+
 CANVAS_WIDTH = 800
 CANVAS_HEIGHT = 600
 
 UPDATE_DELAY = 33
 PACMAN_SPEED = 5
+
+
+class NormalPacmanState:
+    def __init__(self, pacman):
+        self.pacman = pacman
+
+    def random_upgrade(self):
+        if random.random() < 0.1:
+            self.pacman.state = SuperPacmanState(self.pacman)
+
+    def move_pacman(self):
+        self.pacman.x += PACMAN_SPEED * DIR_OFFSET[self.pacman.direction][0]
+        self.pacman.y += PACMAN_SPEED * DIR_OFFSET[self.pacman.direction][1]
+
+
+class SuperPacmanState:
+    def __init__(self, pacman):
+        self.pacman = pacman
+        self.counter = 0
+
+    def random_upgrade(self):
+        pass
+
+    def move_pacman(self):
+        if self.counter <= 50:
+            self.pacman.x += 2 * PACMAN_SPEED * DIR_OFFSET[self.pacman.direction][0]
+            self.pacman.y += 2 * PACMAN_SPEED * DIR_OFFSET[self.pacman.direction][1]
+            self.counter += 1
+        else:
+            self.pacman.state = NormalPacmanState(self.pacman)
 
 
 class Pacman(Sprite):
@@ -20,30 +52,37 @@ class Pacman(Sprite):
 
         self.direction = DIR_STILL
         self.next_direction = DIR_STILL
+        self.state = NormalPacmanState(self)
 
         x, y = maze.piece_center(r, c)
         super().__init__(app, 'images/pacman.png', x, y)
         self.dot_eaten_observers = []
 
+        self.is_super_speed = False
+        self.super_speed_counter = 0
+
     def update(self):
+
         if self.maze.is_at_center(self.x, self.y):
             r, c = self.maze.xy_to_rc(self.x, self.y)
 
             if self.maze.has_dot_at(r, c):
-                if self.maze.is_superdot(r, c):
-                    # TODO:
-                    #   - call all the observers here
-                    for i in self.dot_eaten_observers:
-                        i()
-            self.maze.eat_dot_at(r, c)
+                self.maze.eat_dot_at(r, c)
+                self.state.random_upgrade()
+                # TODO:
+                #   - call all the observers here
+                for i in self.dot_eaten_observers:
+                    i()
 
             if self.maze.is_movable_direction(r, c, self.next_direction):
                 self.direction = self.next_direction
             else:
                 self.direction = DIR_STILL
 
-        self.x += PACMAN_SPEED * DIR_OFFSET[self.direction][0]
-        self.y += PACMAN_SPEED * DIR_OFFSET[self.direction][1]
+        self.state.move_pacman()
+
+        # self.x += PACMAN_SPEED * DIR_OFFSET[self.direction][0]
+        # self.y += PACMAN_SPEED * DIR_OFFSET[self.direction][1]
 
     def set_next_direction(self, direction):
         self.next_direction = direction
@@ -61,9 +100,13 @@ class PacmanGame(GameApp):
 
         self.elements.append(self.pacman1)
         self.elements.append(self.pacman2)
+
         self.pacman1_score = 0
         self.pacman2_score = 0
 
+        # TODO:
+        #   - register self.dot_eaten_by_pacman1 to self.pacman1's observers
+        #   - register self.dot_eaten_by_pacman2 to self.pacman2's observers
         self.pacman1.dot_eaten_observers.append(self.dot_eaten_by_pacman1)
         self.pacman2.dot_eaten_observers.append(self.dot_eaten_by_pacman2)
 
@@ -72,10 +115,11 @@ class PacmanGame(GameApp):
             'A': self.get_pacman_next_direction_function(self.pacman1, DIR_LEFT),
             'S': self.get_pacman_next_direction_function(self.pacman1, DIR_DOWN),
             'D': self.get_pacman_next_direction_function(self.pacman1, DIR_RIGHT),
-            'I': self.get_pacman_next_direction_function(self.pacman1, DIR_UP),
-            'J': self.get_pacman_next_direction_function(self.pacman1, DIR_LEFT),
-            'K': self.get_pacman_next_direction_function(self.pacman1, DIR_DOWN),
-            'L': self.get_pacman_next_direction_function(self.pacman1, DIR_RIGHT),
+
+            'I': self.get_pacman_next_direction_function(self.pacman2, DIR_UP),
+            'J': self.get_pacman_next_direction_function(self.pacman2, DIR_LEFT),
+            'K': self.get_pacman_next_direction_function(self.pacman2, DIR_DOWN),
+            'L': self.get_pacman_next_direction_function(self.pacman2, DIR_RIGHT),
         }
 
     def update_scores(self):
@@ -98,21 +142,17 @@ class PacmanGame(GameApp):
 
     def on_key_pressed(self, event):
         ch = event.char.upper()
-        if self.command_map.get(ch,"") != "":
+        if self.command_map.get(ch):
             self.command_map[ch]()
 
-        # TODO:
-        #   - check if ch is in self.command_map, if it is in the map, call the function.
-
-
+    # TODO:
+    #   - check if ch is in self.command_map, if it is in the map, call the function.
     def get_pacman_next_direction_function(self, pacman, next_direction):
         def f():
             pacman.set_next_direction(next_direction)
+
         return f
 
-
-        # TODO:
-        #   - check if ch is in self.command_map, if it is in the map, call the function.
 
 if __name__ == "__main__":
     root = tk.Tk()
